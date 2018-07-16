@@ -2,14 +2,13 @@ package codacy.metrics
 
 import play.api.libs.json.{Format, JsString, JsValue, Json}
 
-case class RubocopLocation(line: Int, column: JsValue, length: JsValue)
+final case class RubocopLocation(line: Int, column: JsValue, length: JsValue)
 
-case class RubocopOffense(message: JsString,
-                          location: RubocopLocation)
+final case class RubocopOffense(message: JsString, location: RubocopLocation)
 
-case class RubocopFile(path: JsString, offenses: Option[List[RubocopOffense]])
+final case class RubocopFile(path: JsString, offenses: Option[List[RubocopOffense]])
 
-case class RubocopResult(files: Option[List[RubocopFile]])
+final case class RubocopResult(files: Option[List[RubocopFile]])
 
 object RubocopResult {
   implicit val RLocation: Format[RubocopLocation] = {

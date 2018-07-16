@@ -28,3 +28,13 @@ scalaVersion in ThisBuild := scalaVersionNumber
 scalaBinaryVersion in ThisBuild := scalaBinaryVersionNumber
 
 scapegoatVersion in ThisBuild := "1.3.5"
+
+mappings in Universal ++= ((resourceDirectory in Compile) map { resourceDir: File =>
+  val rubyFiles = Seq(
+    (file("Gemfile"), "/setup/Gemfile"),
+    (file("Gemfile.lock"), "/setup/Gemfile.lock"),
+    (file(".ruby-version"), "/setup/.ruby-version"),
+    (file(".rubocop-version"), "/setup/.rubocop-version"))
+
+  rubyFiles
+}).value

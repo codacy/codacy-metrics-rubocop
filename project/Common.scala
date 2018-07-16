@@ -36,13 +36,10 @@ object Common {
     dockerEntrypoint := Seq(s"$defaultDockerInstallationPath/bin/${name.value}"),
     dockerCmd := Seq(),
     dockerCommands := dockerCommands.value.flatMap {
-      case cmd @ (Cmd("ADD", "opt /opt")) =>
-        List(
-          cmd,
-          Cmd("RUN", installAll),
-          Cmd("RUN", "mv /opt/docker/docs /docs"),
-          Cmd("RUN", s"adduser -u 2004 -D $dockerUser"),
-          ExecCmd("RUN", Seq("chown", "-R", s"$dockerUser:$dockerGroup", "/docs"): _*))
+      case cmd @ Cmd("WORKDIR", _) =>
+        List(cmd, Cmd("RUN", s"adduser -u 2004 -D $dockerUser"))
+      case cmd @ Cmd("ADD", "opt /opt") =>
+        List(cmd, Cmd("RUN", installAll))
       case other => List(other)
     })
 

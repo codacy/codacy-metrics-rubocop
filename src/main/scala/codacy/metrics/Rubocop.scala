@@ -16,12 +16,11 @@ import scala.util.{Failure, Properties, Success, Try}
 object Rubocop extends MetricsTool {
 
   private val configFileContent =
-    s"""
-       |AllCops:
-       |  DisplayCopNames: false
-       |  UseCache: false
-       |Metrics/CyclomaticComplexity:
-       |  Max: 1
+    """AllCops:
+      |  DisplayCopNames: false
+      |  UseCache: false
+      |Metrics/CyclomaticComplexity:
+      |  Max: 1
       """.stripMargin
 
   override def apply(source: Source.Directory,
