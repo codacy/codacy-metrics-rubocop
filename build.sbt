@@ -4,8 +4,6 @@ import sbt._
 val scalaBinaryVersionNumber = "2.12"
 val scalaVersionNumber = s"$scalaBinaryVersionNumber.4"
 
-
-
 lazy val codacyMetricsRubocop = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)

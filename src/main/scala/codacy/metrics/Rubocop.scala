@@ -15,6 +15,15 @@ import scala.util.{Failure, Properties, Success, Try}
 
 object Rubocop extends MetricsTool {
 
+  private val configFileContent =
+    s"""
+       |AllCops:
+       |  DisplayCopNames: false
+       |  UseCache: false
+       |Metrics/CyclomaticComplexity:
+       |  Max: 1
+      """.stripMargin
+
   override def apply(source: Source.Directory,
                      language: Option[Language],
                      files: Option[Set[Source.File]],
@@ -29,28 +38,13 @@ object Rubocop extends MetricsTool {
   }
 
   private def calculateComplexity(directory: String, maybeFiles: Option[Set[Source.File]]) = {
-    val directoryAbsolutePath = File(directory).path.toAbsolutePath.toString
-
-    val filesCmd = maybeFiles.map(_.map(_.path)).getOrElse(Set(directoryAbsolutePath))
-
-    val configPath = getConfigFile.map { configFile =>
-      List("-c", configFile.toAbsolutePath.toString)
-    }.getOrElse(List.empty)
-
-    val cmd = List(
-      "rubocop",
-      "--force-exclusion",
-      "-f",
-      "json",
-      "--only",
-      "Metrics/CyclomaticComplexity") ++ configPath ++ filesCmd
+    val cmd = command(directory, maybeFiles)
 
     CommandRunner.exec(cmd, Option(File(directory).toJava)) match {
 
       case Right(resultFromTool) if resultFromTool.exitCode < 2 =>
-        parseResult(resultFromTool.stdout.mkString("\n")) match {
-          case s @ Success(_) => s
-          case Failure(e) =>
+        parseResult(resultFromTool.stdout.mkString("\n")).recoverWith {
+          case e =>
             val msg =
               s"""
                  |Rubocop exited with code ${resultFromTool.exitCode}
@@ -75,6 +69,18 @@ object Rubocop extends MetricsTool {
     }
   }
 
+  private def command(directory: String, maybeFiles: Option[Set[Source.File]]): List[String] = {
+    val directoryAbsolutePath = File(directory).path.toAbsolutePath.toString
+
+    val filesCmd = maybeFiles.map(_.map(_.path)).getOrElse(Set(directoryAbsolutePath))
+
+    val configPath = createConfigFile.map { configFile =>
+      List("-c", configFile.toAbsolutePath.toString)
+    }.getOrElse(List.empty)
+
+    List("rubocop", "--force-exclusion", "-f", "json", "--only", "Metrics/CyclomaticComplexity") ++ configPath ++ filesCmd
+  }
+
   private def parseResult(resultFromTool: String): Try[List[FileMetrics]] = {
     Try {
       Json.parse(resultFromTool)
@@ -82,7 +88,7 @@ object Rubocop extends MetricsTool {
       json.validate[RubocopResult] match {
         case JsSuccess(rubocopResult, _) =>
           Success(rubocopResult.files.getOrElse(List.empty).map { file =>
-            ruboFileToResult(file)
+            fileMetrics(file)
           })
         case JsError(err) =>
           Failure(new Throwable(Json.stringify(JsError.toJson(err))))
@@ -100,39 +106,27 @@ object Rubocop extends MetricsTool {
     }
   }
 
-  private def ruboFileToResult(rubocopFiles: RubocopFiles): FileMetrics = {
+  private def fileMetrics(rubocopFiles: RubocopFile): FileMetrics = {
     val lineComplexities: Set[LineComplexity] = rubocopFiles.offenses
       .getOrElse(List.empty)
       .flatMap(r => parseComplexityMessage(r.message.value).map(v => LineComplexity(r.location.line, v)))(
         collection.breakOut)
-    val complexity = Some((lineComplexities.map(_.value) + 0).max)
 
-    FileMetrics(rubocopFiles.path.value, complexity, None, None, None, None, lineComplexities)
+    val complexity = (lineComplexities.map(_.value) + 0).max
+
+    FileMetrics(rubocopFiles.path.value, complexity = Some(complexity), None, None, None, None, lineComplexities)
   }
 
-  private def getConfigFile: Option[Path] = {
+  private def createConfigFile: Option[Path] = {
+    val prefix = "config"
+    val suffix = ".yml"
 
-    val ymlConfiguration =
-      s"""
-         |AllCops:
-         |  DisplayCopNames: false
-         |  UseCache: false
-         |Metrics/CyclomaticComplexity:
-         |  Max: 1
-      """.stripMargin
-
-    fileForConfig(ymlConfiguration).toOption
-  }
-
-  private[this] def fileForConfig(config: String) = tmpFile(config.toString)
-
-  private[this] def tmpFile(content: String, prefix: String = "config", suffix: String = ".yml"): Try[Path] = {
     Try {
       Files.write(
         Files.createTempFile(prefix, suffix),
-        content.getBytes(StandardCharsets.UTF_8),
+        configFileContent.getBytes(StandardCharsets.UTF_8),
         StandardOpenOption.CREATE)
-    }
+    }.toOption
   }
 
 }

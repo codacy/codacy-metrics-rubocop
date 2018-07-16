@@ -19,8 +19,7 @@ object Common {
        |&& cd /opt/docker/setup
        |&& bundle install
        |&& gem cleanup
-       |&& rm -rf /tmp/* /var/cache/apk/*""".stripMargin
-      .replaceAll(System.lineSeparator(), " ")
+       |&& rm -rf /tmp/* /var/cache/apk/*""".stripMargin.replaceAll(System.lineSeparator(), " ")
 
   val dockerUser = "docker"
   val dockerGroup = "docker"
@@ -43,9 +42,7 @@ object Common {
           Cmd("RUN", installAll),
           Cmd("RUN", "mv /opt/docker/docs /docs"),
           Cmd("RUN", s"adduser -u 2004 -D $dockerUser"),
-          ExecCmd("RUN",
-            Seq("chown", "-R", s"$dockerUser:$dockerGroup", "/docs"): _*)
-        )
+          ExecCmd("RUN", Seq("chown", "-R", s"$dockerUser:$dockerGroup", "/docs"): _*))
       case other => List(other)
     })
 
