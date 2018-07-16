@@ -1,7 +1,7 @@
 package codacy.metrics
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path, Paths, StandardOpenOption}
+import java.nio.file.{Files, Path, StandardOpenOption}
 
 import better.files.File
 import codacy.docker.api.metrics.{FileMetrics, LineComplexity, MetricsTool}
@@ -14,10 +14,6 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Properties, Success, Try}
 
 object Rubocop extends MetricsTool {
-
-  private lazy val resultFilePath: Path = Paths.get(Properties.tmpDir, "rubocop-result.json")
-  //TODO: do we need the gemfile.lock??
-  private val filesToIgnore: Set[String] = Set("Gemfile.lock").map(_.toLowerCase())
 
   override def apply(source: Source.Directory,
                      language: Option[Language],
@@ -32,31 +28,27 @@ object Rubocop extends MetricsTool {
     }
   }
 
-  //TODO: refactor!!!!
   private def calculateComplexity(directory: String, maybeFiles: Option[Set[Source.File]]) = {
     val directoryAbsolutePath = File(directory).path.toAbsolutePath.toString
-    val filesCmd = maybeFiles.map(_.map(_.path)).getOrElse(List(directoryAbsolutePath)).collect {
-      case file if !filesToIgnore.contains(file.toLowerCase()) =>
-        file.toString
-    }
+
+    val filesCmd = maybeFiles.map(_.map(_.path)).getOrElse(Set(directoryAbsolutePath))
+
     val configPath = getConfigFile.map { configFile =>
       List("-c", configFile.toAbsolutePath.toString)
     }.getOrElse(List.empty)
 
-    //TODO: do we need all these args?
     val cmd = List(
       "rubocop",
       "--force-exclusion",
       "-f",
       "json",
-      "-o",
-      resultFilePath.toAbsolutePath.toString,
       "--only",
       "Metrics/CyclomaticComplexity") ++ configPath ++ filesCmd
+
     CommandRunner.exec(cmd, Option(File(directory).toJava)) match {
 
       case Right(resultFromTool) if resultFromTool.exitCode < 2 =>
-        parseResult(resultFilePath.toString) match {
+        parseResult(resultFromTool.stdout.mkString("\n")) match {
           case s @ Success(_) => s
           case Failure(e) =>
             val msg =
@@ -83,10 +75,8 @@ object Rubocop extends MetricsTool {
     }
   }
 
-  private[this] def parseResult(filename: String): Try[List[FileMetrics]] = {
+  private def parseResult(resultFromTool: String): Try[List[FileMetrics]] = {
     Try {
-      val resultFromTool = File(filename).contentAsString
-      println(resultFromTool)
       Json.parse(resultFromTool)
     }.flatMap { json =>
       json.validate[RubocopResult] match {

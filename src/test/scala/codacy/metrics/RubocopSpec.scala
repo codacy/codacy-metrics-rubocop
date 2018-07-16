@@ -39,8 +39,6 @@ class RubocopSpec extends Specification {
         fileMetricsMap.get should containTheSameElementsAs(expectedFileMetrics)
       }
 
-
-      //TODO: this test is still broken, it should analyse only a specific file!!
       "specific files" in {
 
         val expectedFileMetrics = List(expectedFileMetric2)
