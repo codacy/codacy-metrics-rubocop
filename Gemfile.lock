@@ -11,8 +11,6 @@ GEM
     concurrent-ruby (1.0.5)
     i18n (1.0.1)
       concurrent-ruby (~> 1.0)
-    lingohub-rubocop (1.0.3)
-      rubocop (= 0.51)
     method_source (0.9.0)
     minitest (5.11.3)
     parallel (1.12.1)
@@ -32,12 +30,6 @@ GEM
       rainbow (>= 2.2.2, < 3.0)
       ruby-progressbar (~> 1.7)
       unicode-display_width (~> 1.0, >= 1.0.1)
-    rubocop-github (0.10.0)
-      rubocop (~> 0.51)
-    rubocop-migrations (0.1.2)
-      rubocop (~> 0.41)
-    rubocop-rspec (1.20.1)
-      rubocop (>= 0.51.0)
     ruby-progressbar (1.9.0)
     safe_yaml (1.0.4)
     thread_safe (0.3.6)
@@ -51,13 +43,9 @@ PLATFORMS
 
 DEPENDENCIES
   activesupport
-  lingohub-rubocop (= 1.0.3)
   parser (= 2.4.0.0)
   pry
   rubocop (= 0.51.0)
-  rubocop-github (= 0.10.0)
-  rubocop-migrations (= 0.1.2)
-  rubocop-rspec (= 1.20.1)
   safe_yaml
   yard
 

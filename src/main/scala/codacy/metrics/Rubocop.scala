@@ -7,7 +7,7 @@ import better.files.File
 import codacy.docker.api.metrics.{FileMetrics, LineComplexity, MetricsTool}
 import codacy.docker.api.{MetricsConfiguration, Source}
 import com.codacy.api.dtos.{Language, Languages}
-import com.codacy.docker.api.utils.CommandRunner
+import com.codacy.docker.api.utils.{CommandResult, CommandRunner}
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.matching.Regex
@@ -21,7 +21,7 @@ object Rubocop extends MetricsTool {
       |  UseCache: false
       |Metrics/CyclomaticComplexity:
       |  Max: 1
-      """.stripMargin
+    """.stripMargin
 
   override def apply(source: Source.Directory,
                      language: Option[Language],
@@ -36,36 +36,31 @@ object Rubocop extends MetricsTool {
     }
   }
 
-  private def calculateComplexity(directory: String, maybeFiles: Option[Set[Source.File]]) = {
+  private def calculateComplexity(directory: String, maybeFiles: Option[Set[Source.File]]): Try[List[FileMetrics]] = {
     val cmd = command(directory, maybeFiles)
 
-    CommandRunner.exec(cmd, Option(File(directory).toJava)) match {
+    CommandRunner.exec(cmd, Option(File(directory).toJava)).toTry.flatMap {
 
-      case Right(resultFromTool) if resultFromTool.exitCode < 2 =>
+      case resultFromTool if resultFromTool.exitCode < 2 =>
         parseResult(resultFromTool.stdout.mkString("\n")).recoverWith {
           case e =>
-            val msg =
-              s"""
-                 |Rubocop exited with code ${resultFromTool.exitCode}
-                 |message: ${e.getMessage}
-                 |stdout: ${resultFromTool.stdout.mkString(Properties.lineSeparator)}
-                 |stderr: ${resultFromTool.stderr.mkString(Properties.lineSeparator)}
-                """.stripMargin
-            Failure(new Exception(msg))
+            val errorMessage = exceptionMsg(resultFromTool, Some(e))
+            Failure(new Exception(errorMessage))
         }
 
-      case Right(resultFromTool) =>
-        val msg =
-          s"""
-             |Rubocop exited with code ${resultFromTool.exitCode}
-             |stdout: ${resultFromTool.stdout.mkString(Properties.lineSeparator)}
-             |stderr: ${resultFromTool.stderr.mkString(Properties.lineSeparator)}
-                """.stripMargin
-        Failure(new Exception(msg))
-
-      case Left(e) =>
-        Failure(e)
+      case resultFromTool =>
+        val errorMessage = exceptionMsg(resultFromTool, None)
+        Failure(new Exception(errorMessage))
     }
+  }
+
+  private def exceptionMsg(resultFromTool: CommandResult, throwable: Option[Throwable]) = {
+    s"""
+       |Rubocop exited with code ${resultFromTool.exitCode}
+       |exception message: ${throwable.map(_.getMessage).getOrElse("(no exception thrown)")}
+       |stdout: ${resultFromTool.stdout.mkString(Properties.lineSeparator)}
+       |stderr: ${resultFromTool.stderr.mkString(Properties.lineSeparator)}
+      """.stripMargin
   }
 
   private def command(directory: String, maybeFiles: Option[Set[Source.File]]): List[String] = {
@@ -86,9 +81,11 @@ object Rubocop extends MetricsTool {
     }.flatMap { json =>
       json.validate[RubocopResult] match {
         case JsSuccess(rubocopResult, _) =>
-          Success(rubocopResult.files.getOrElse(List.empty).map { file =>
-            fileMetrics(file)
-          })
+          val files = rubocopResult.files.getOrElse(List.empty)
+          val fileMetricsList = files.map(fileMetrics(_))
+
+          Success(fileMetricsList)
+
         case JsError(err) =>
           Failure(new Throwable(Json.stringify(JsError.toJson(err))))
       }
