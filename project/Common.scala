@@ -9,14 +9,14 @@ object Common {
   private val defaultDockerInstallationPath = "/opt/codacy"
 
   //WARNING: Update the rubocop-rspec also updates rubocop version !
-  private def installAll =
+  private def installAll: String =
     s"""echo -n "" > /etc/apk/repositories
        |&& echo "http://dl-cdn.alpinelinux.org/alpine/v3.7/main" >> /etc/apk/repositories
        |&& echo "http://dl-cdn.alpinelinux.org/alpine/v3.7/community" >> /etc/apk/repositories
-       |&& apk add --no-cache ruby ruby-irb ruby-rake ruby-io-console ruby-bigdecimal
+       |&& apk add --no-cache bash ruby ruby-irb ruby-rake ruby-io-console ruby-bigdecimal
        |ruby-json ruby-bundler libstdc++ tzdata bash ca-certificates libc-dev
        |&& echo 'gem: --no-document' > /etc/gemrc
-       |&& cd /opt/docker/setup
+       |&& cd $defaultDockerInstallationPath/setup
        |&& bundle install
        |&& gem cleanup
        |&& rm -rf /tmp/* /var/cache/apk/*""".stripMargin.replaceAll(System.lineSeparator(), " ")
@@ -38,7 +38,7 @@ object Common {
     dockerCommands := dockerCommands.value.flatMap {
       case cmd @ Cmd("WORKDIR", _) =>
         List(cmd, Cmd("RUN", s"adduser -u 2004 -D $dockerUser"))
-      case cmd @ Cmd("ADD", "opt /opt") =>
+      case cmd @ Cmd("ADD", "--chown=docker:docker opt /opt") =>
         List(cmd, Cmd("RUN", installAll))
       case other => List(other)
     })
