@@ -29,7 +29,7 @@ scalaBinaryVersion in ThisBuild := scalaBinaryVersionNumber
 
 scapegoatVersion in ThisBuild := "1.3.5"
 
-mappings in Universal ++= ((resourceDirectory in Compile) map { resourceDir: File =>
+mappings in Universal ++= {
   val rubyFiles = Seq(
     (file("Gemfile"), "/setup/Gemfile"),
     (file("Gemfile.lock"), "/setup/Gemfile.lock"),
@@ -37,4 +37,4 @@ mappings in Universal ++= ((resourceDirectory in Compile) map { resourceDir: Fil
     (file(".rubocop-version"), "/setup/.rubocop-version"))
 
   rubyFiles
-}).value
+}
