@@ -1,7 +1,7 @@
 package codacy.metrics
 
-import codacy.docker.api.Source
-import codacy.docker.api.metrics.{FileMetrics, LineComplexity}
+import com.codacy.plugins.api.Source
+import com.codacy.plugins.api.metrics.{FileMetrics, LineComplexity}
 import org.specs2.mutable.Specification
 
 class RubocopSpec extends Specification {
