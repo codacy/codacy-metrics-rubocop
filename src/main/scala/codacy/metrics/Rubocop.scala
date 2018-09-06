@@ -4,10 +4,10 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, StandardOpenOption}
 
 import better.files.File
-import codacy.docker.api.metrics.{FileMetrics, LineComplexity, MetricsTool}
-import codacy.docker.api.{MetricsConfiguration, Source}
-import com.codacy.api.dtos.{Language, Languages}
 import com.codacy.docker.api.utils.{CommandResult, CommandRunner}
+import com.codacy.plugins.api.languages.{Language, Languages}
+import com.codacy.plugins.api.metrics.{FileMetrics, LineComplexity, MetricsTool}
+import com.codacy.plugins.api.{Options, Source}
 import play.api.libs.json.{JsError, JsSuccess, Json}
 
 import scala.util.matching.Regex
@@ -26,7 +26,7 @@ object Rubocop extends MetricsTool {
   override def apply(source: Source.Directory,
                      language: Option[Language],
                      files: Option[Set[Source.File]],
-                     options: Map[MetricsConfiguration.Key, MetricsConfiguration.Value]): Try[List[FileMetrics]] = {
+                     options: Map[Options.Key, Options.Value]): Try[List[FileMetrics]] = {
 
     language match {
       case Some(lang) if lang != Languages.Ruby =>
