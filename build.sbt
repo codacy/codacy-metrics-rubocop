@@ -1,41 +1,48 @@
-import sbt.Keys._
-import sbt._
+import com.typesafe.sbt.packager.docker.{Cmd, DockerAlias}
 
-val scalaBinaryVersionNumber = "2.12"
-val scalaVersionNumber = s"$scalaBinaryVersionNumber.4"
-
-lazy val codacyMetricsRubocop = project
-  .in(file("."))
-  .enablePlugins(JavaAppPackaging)
-  .enablePlugins(DockerPlugin)
-  .settings(
-    inThisBuild(
-      List(
-        organization := "com.codacy",
-        scalaVersion := scalaVersionNumber,
-        version := "0.1.0-SNAPSHOT",
-        resolvers := Seq("Sonatype OSS Snapshots".at("https://oss.sonatype.org/content/repositories/releases")) ++ resolvers.value,
-        scalacOptions ++= Common.compilerFlags,
-        scalacOptions in Test ++= Seq("-Yrangepos"),
-        scalacOptions in (Compile, console) --= Seq("-Ywarn-unused:imports", "-Xfatal-warnings"))),
-    name := "codacy-metrics-rubocop",
-    // App Dependencies
-    libraryDependencies ++= Seq(Dependencies.Codacy.metricsSeed),
-    // Test Dependencies
-    libraryDependencies ++= Seq(Dependencies.specs2).map(_ % Test))
-  .settings(Common.dockerSettings: _*)
-
-scalaVersion in ThisBuild := scalaVersionNumber
-scalaBinaryVersion in ThisBuild := scalaBinaryVersionNumber
-
-scapegoatVersion in ThisBuild := "1.3.5"
+enablePlugins(JavaAppPackaging)
+enablePlugins(DockerPlugin)
+organization := "com.codacy"
+scalaVersion := "2.13.1"
+name := "codacy-metrics-rubocop"
+// App Dependencies
+libraryDependencies ++= Seq("com.codacy" %% "codacy-metrics-scala-seed" % "0.2.0",
+                            "org.specs2" %% "specs2-core" % "4.8.0" % Test)
 
 mappings in Universal ++= {
-  val rubyFiles = Seq(
-    (file("Gemfile"), "/setup/Gemfile"),
-    (file("Gemfile.lock"), "/setup/Gemfile.lock"),
-    (file(".ruby-version"), "/setup/.ruby-version"),
-    (file(".rubocop-version"), "/setup/.rubocop-version"))
+  (resourceDirectory in Compile).map { resourceDir: File =>
+    val src = resourceDir / "docs"
+    val dest = "/docs"
 
-  rubyFiles
+    for {
+      path <- src.allPaths.get if !path.isDirectory
+    } yield path -> path.toString.replaceFirst(src.toString, dest)
+  }
+}.value ++ Seq(
+  (file("Gemfile"), "/setup/Gemfile"),
+  (file("Gemfile.lock"), "/setup/Gemfile.lock"),
+  (file(".rubocop-version"), "/setup/.rubocop-version")
+)
+
+Docker / packageName := packageName.value
+dockerBaseImage := "openjdk:8-jre-alpine"
+Docker / daemonUser := "docker"
+Docker / daemonGroup := "docker"
+dockerEntrypoint := Seq(s"/opt/docker/bin/${name.value}")
+val installAll: String =
+  s"""apk add --no-cache bash ruby ruby-dev ruby-irb ruby-rake ruby-io-console ruby-bigdecimal
+     |ruby-json ruby-bundler libstdc++ tzdata bash ca-certificates libc-dev gcc make
+     |&& echo 'gem: --no-document' > /etc/gemrc
+     |&& cd setup
+     |&& gem install bundler
+     |&& bundle install
+     |&& gem cleanup""".stripMargin.replaceAll(System.lineSeparator(), " ")
+dockerCommands := dockerCommands.value.flatMap {
+  case cmd @ Cmd("ADD", _) =>
+    List(Cmd("RUN", "adduser -u 2004 -D docker"),
+         cmd,
+         Cmd("RUN", installAll),
+         Cmd("RUN", "mv /opt/docker/docs /docs"))
+
+  case other => List(other)
 }
