@@ -14,9 +14,9 @@ workflows:
           name: publish_docker_local
           cmd: |
             sudo apt-get -y update
-            sudo apt-get -y install ruby-dev ruby-bundler make gcc
-            sudo gem install rake
-            sudo gem install rubocop
+            sudo apt-get -y install ruby-dev make gcc
+            gem install bundler
+            bundler install
             sbt "set scalafmtUseIvy in ThisBuild := false;
                  scalafmt::test;
                  test:scalafmt::test;
