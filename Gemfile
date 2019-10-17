@@ -7,7 +7,7 @@ end
 
 gem "yard"
 gem "activesupport"
-gem "parser", "2.4.0.0"
+gem "parser"
 gem "pry"
 gem "rubocop", File.read('.rubocop-version')
 gem "safe_yaml"

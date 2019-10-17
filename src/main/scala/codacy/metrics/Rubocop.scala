@@ -105,8 +105,9 @@ object Rubocop extends MetricsTool {
   private def fileMetrics(rubocopFiles: RubocopFile): FileMetrics = {
     val lineComplexities: Set[LineComplexity] = rubocopFiles.offenses
       .getOrElse(List.empty)
-      .flatMap(r => parseComplexityMessage(r.message.value).map(v => LineComplexity(r.location.line, v)))(
-        collection.breakOut)
+      .view
+      .flatMap(r => parseComplexityMessage(r.message.value).map(v => LineComplexity(r.location.line, v)))
+      .to(Set)
 
     val complexity = (lineComplexities.map(_.value) + 0).max
 
