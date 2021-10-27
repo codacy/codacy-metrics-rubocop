@@ -25,7 +25,7 @@ mappings in Universal ++= {
   (file(".rubocop-version"), "/setup/.rubocop-version"))
 
 Docker / packageName := packageName.value
-dockerBaseImage := "openjdk:8-jre-alpine"
+dockerBaseImage := "amazoncorretto:8-alpine3.14-jre"
 Docker / daemonUser := "docker"
 Docker / daemonGroup := "docker"
 dockerEntrypoint := Seq(s"/opt/docker/bin/${name.value}")
@@ -36,6 +36,7 @@ val installAll: String =
      |&& echo 'gem: --no-document' > /etc/gemrc
      |&& cd setup
      |&& gem install bundler
+     |&& gem install rdoc
      |&& bundle install
      |&& gem cleanup""".stripMargin.replaceAll(System.lineSeparator(), " ")
 dockerCommands := dockerCommands.value.flatMap {
