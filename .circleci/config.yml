@@ -13,19 +13,10 @@ workflows:
       - codacy/sbt:
           name: publish_docker_local
           cmd: |
-            sudo apt-get -y update
-            sudo apt-get -y install ruby-dev make gcc
-            gem update --system
-            gem install bundler
-            bundler install
-            sbt "set scalafmtUseIvy in ThisBuild := false;
-                 scalafmt::test;
-                 test:scalafmt::test;
+            sbt "scalafmt::test;
                  sbt:scalafmt::test;
-                 test;
-                 set name := \"$CIRCLE_PROJECT_REPONAME\";
-                 set version in Docker := \"latest\";
-                 docker:publishLocal"
+                 stage"
+            docker build -t $CIRCLE_PROJECT_REPONAME:latest .
             docker save --output ~/workdir/docker-image.tar $CIRCLE_PROJECT_REPONAME:latest
           persist_to_workspace: true
           requires:

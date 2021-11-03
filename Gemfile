@@ -9,5 +9,5 @@ gem "yard"
 gem "activesupport"
 gem "parser"
 gem "pry"
-gem "rubocop", File.read('.rubocop-version')
+gem "rubocop", "1.22.2"
 gem "safe_yaml"
