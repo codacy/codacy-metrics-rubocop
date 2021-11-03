@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+# #Metrics: {"complexity": 22}
 
 ##
 # Class Graph
@@ -58,6 +58,7 @@ class Graph
   # La funzione di inizializzazione si prende una stringa multilinea in
   # ingresso e la trasforma in un grafo, nel quale si vanno
   # a identificare in particolare il punto di partenza e il punto di arrivo
+  # #LineComplexity: 22
   def initialize(d, start = "A", stop = "B",
                  obst = "#", empty = " ", out = "*")
 
@@ -158,6 +159,7 @@ class Graph
   ##
   # Print the dungeon. If a path (Array of Nodes) is given as input
   # it will be printed on the screen using chars @p
+  # #LineComplexity: 7
   def to_s(path = nil)
     str_ = @str.map(&:dup)
     if path
@@ -181,6 +183,7 @@ class Graph
   # Acts on each element of @str, and calls a block
   # that receives the value in position, the row number
   # and the column number
+  # #LineComplexity: 3
   def str_each
     for r in 0...@rows
       for c in 0...@cols
@@ -195,6 +198,7 @@ class Graph
   # that receives the value in position, the row number
   # and the column number.
   # It modifies the content of @dungeon.
+  # #LineComplexity: 3
   def map
     for r in 0...@rows
       for c in 0...@cols
@@ -208,6 +212,7 @@ class Graph
   # Acts on each element of @dungeon, and calls a block
   # that receives the value in position, the row number
   # and the column number.
+  # #LineComplexity: 3
   def each
     for r in 0...@rows
       for c in 0...@cols
@@ -220,6 +225,7 @@ class Graph
 
   ##
   # Specify if we are inside or outside of the matrix
+  # #LineComplexity: 2
   def inside?(r, c)
     return ((0...@rows).include?(r) and (0...@cols).include?(c))
   end # inside?
